@@ -1,0 +1,176 @@
+﻿@page "/fileTask"
+@using Microsoft.AspNetCore.Components.Forms;
+@using TestTask.Data.Context;
+@using TestTask.Data.Models;
+
+<PageTitle>Тест - Файлы</PageTitle>
+
+<MudPaper Elevation="0" Outlined=true Style="border-radius: 20px; padding: 15px;">
+    <MudGrid>
+        <MudItem xs="6">
+            <MudText Typo="Typo.h5"><b>Файлы</b></MudText>
+        </MudItem>
+        <MudItem xs="6" Style="display: flex; justify-content: end;">
+            <MudTooltip Text="Добавить файл в БД" Placement="Placement.Top">
+                <MudFab @onclick="@(() => AddFileOverlayisVisible = true)" Style="background-color: #6a52f2;" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            </MudTooltip>
+        </MudItem>
+        <MudItem xs="12">
+            @if (FileInstances is not null)
+            {
+                @if (FileInstances.Count > 0)
+                {
+                    <MudList Dense=true Style="height: 450px; overflow-y: scroll;">
+                        @foreach (var file in FileInstances)
+                        {
+                            <MudListItem>
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="2">
+                                        <MudTooltip Text="Скачать файл" Placement="Placement.Top">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" @onclick="@(() => FileService.DownloadFile(file))" />
+                                        </MudTooltip>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.body2"><b>@file.FileName</b></MudText>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudListItem>
+                        }
+                    </MudList>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2"><b>В БД отсутствуют файлы</b></MudText>
+                }
+            }
+            else
+            {
+                <MudProgressCircular Indeterminate=true Size="Size.Large" Color="Color.Primary" />
+            }
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudOverlay Visible=AddFileOverlayisVisible DarkBackground=true>
+    <MudStack Row=true Justify="Justify.SpaceBetween">
+        <MudText Typo="Typo.h4" Style="color: white;"><b>Загрузка файла</b></MudText>
+        <MudPaper> </MudPaper>
+        <MudFab @onclick="@(() => AddFileOverlayisVisible = false)" Style="background-color: #ba0624;" StartIcon="@Icons.Material.Filled.Close" Size="Size.Small" />
+    </MudStack>
+    <MudPaper Style="padding: 15px; background-color: white; border-radius: 20px; margin-top: 20px;">
+        <MudFileUpload Accept=".docx,.doc" T="IReadOnlyList<IBrowserFile>" OnFilesChanged="OnInputFileChanged" AppendMultipleFiles Hidden="false" Class="flex-1" InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20" InputStyle="opacity:0"
+         @ondragenter="@SetDragClass" @ondragleave="@ClearDragClass" @ondragend="@ClearDragClass">
+             <ButtonTemplate>
+                 <MudPaper Height="300px" Outlined="true" Class="@DragClass">
+                     <MudText Typo="Typo.h6">Нажмите или перетащите файлы в область</MudText>
+                     @foreach (var file in fileNames)
+                    {
+                        <MudChip Color="Color.Dark" Text="@file" />
+                    }
+                </MudPaper>
+            </ButtonTemplate>
+        </MudFileUpload>
+        <MudToolBar DisableGutters="true" Class="gap-4">
+            @if (!_isUploading)
+            {
+                <MudButton Style="border-radius: 15px;" StartIcon="@Icons.Material.Filled.Upload" OnClick="Upload" Disabled="@(!fileNames.Any())" Color="Color.Primary" Variant="Variant.Filled">Загрузить</MudButton>
+                <MudButton Style="border-radius: 15px;" StartIcon="@Icons.Material.Filled.ClearAll" OnClick="Clear" Disabled="@(!fileNames.Any())" Color="Color.Error" Variant="Variant.Filled">Очистить</MudButton>
+            }
+            else
+            {
+                <MudProgressCircular Color="Color.Primary" />
+            }
+        </MudToolBar>
+    </MudPaper>
+</MudOverlay>
+
+@code {
+    [Inject]
+    ApplicationDbContext DbContext { get; set; } = null!;
+    [Inject]
+    ISnackbar Snackbar { get; set; } = null!;
+    [Inject]
+    FileService FileService { get; set; } = null!;
+
+    private List<string> fileNames = new(); // Список имен файлов, отображаемых в кружке после загрузки в форму загрузки
+    private static string DefaultDragClass = "relative rounded-lg border-2 border-dashed pa-4 mt-4 mud-width-full mud-height-full z-10";
+    private string DragClass = DefaultDragClass;
+
+    List<FileInstance>? FileInstances { get; set; }
+    List<FileInstance> _filesToUpload = new();
+    bool AddFileOverlayisVisible { get; set; } = false; // Отвечает за видимость оверлея с загрузкой файла
+    const int MaxAllowedFiles = 10;
+    bool _isUploading = false;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            FileInstances = DbContext.DocFiles.ToList();
+            StateHasChanged();
+        }
+
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task OnInputFileChanged(InputFileChangeEventArgs e)
+    {
+        ClearDragClass();
+
+        if (e.FileCount > MaxAllowedFiles)
+        {
+            Snackbar.Add($"Превышено количество загружаемых файлов. Максимальное количество: {MaxAllowedFiles}", Severity.Error);
+            return;
+        }
+
+        var files = e.GetMultipleFiles();
+
+        foreach (var file in files)
+        {
+            fileNames.Add(file.Name);
+            _filesToUpload.Add(await FileService.GetFileInstanceFromBrowserFile(file, file.Name));
+        }
+    }
+
+    private async Task Clear()
+    {
+        fileNames.Clear();
+        _filesToUpload.Clear();
+        ClearDragClass();
+        await Task.Delay(100);
+    }
+
+    private async Task Upload()
+    {
+        if (_filesToUpload.Count <= 0)
+        {
+            Snackbar.Add("Вы не прикрепили ни одного файла", Severity.Info);
+            return;
+        }
+
+        _isUploading = true;
+
+        await DbContext.DocFiles.AddRangeAsync(_filesToUpload);
+        await DbContext.SaveChangesAsync();
+
+        _isUploading = false;
+
+        await UpdateData();
+
+        Snackbar.Add("Файлы успешно загружены", Severity.Success);
+        await Clear();
+        AddFileOverlayisVisible = false;
+    }
+
+    async Task UpdateData()
+    {
+        FileInstances = DbContext.DocFiles.ToList();
+        StateHasChanged();
+    }
+
+    private void SetDragClass()
+        => DragClass = $"{DefaultDragClass} mud-border-primary";
+
+    private void ClearDragClass()
+        => DragClass = DefaultDragClass;
+}

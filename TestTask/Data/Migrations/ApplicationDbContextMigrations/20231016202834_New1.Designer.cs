@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TestTask.Data.Context;
@@ -11,9 +12,11 @@ using TestTask.Data.Context;
 namespace TestTask.Data.Migrations.ApplicationDbContextMigrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231016202834_New1")]
+    partial class New1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -145,20 +148,16 @@ namespace TestTask.Data.Migrations.ApplicationDbContextMigrations
 
             modelBuilder.Entity("TestTask.Data.Models.ArchiveSheet", b =>
                 {
-                    b.HasOne("TestTask.Data.Models.WeatherArchiveFile", "WeatherArchiveFile")
+                    b.HasOne("TestTask.Data.Models.WeatherArchiveFile", null)
                         .WithMany("WeatherArchivesFileSheets")
                         .HasForeignKey("WeatherArchiveFileId");
-
-                    b.Navigation("WeatherArchiveFile");
                 });
 
             modelBuilder.Entity("TestTask.Data.Models.WeatherArchive", b =>
                 {
-                    b.HasOne("TestTask.Data.Models.ArchiveSheet", "ArchiveSheet")
+                    b.HasOne("TestTask.Data.Models.ArchiveSheet", null)
                         .WithMany("SheetWeatherArchives")
                         .HasForeignKey("ArchiveSheetId");
-
-                    b.Navigation("ArchiveSheet");
                 });
 
             modelBuilder.Entity("TestTask.Data.Models.ArchiveSheet", b =>

@@ -3,62 +3,58 @@
 @using TestTask.Data.Context;
 @using TestTask.Data.Models;
 
-<PageTitle>Тест - Файлы</PageTitle>
+<PageTitle>Тест задание</PageTitle>
 
-<MudPaper Elevation="0" Outlined=true Style="border-radius: 20px; padding: 15px;">
-    <MudGrid>
-        <MudItem xs="6">
-            <MudText Typo="Typo.h5"><b>Файлы</b></MudText>
-        </MudItem>
-        <MudItem xs="6" Style="display: flex; justify-content: end;">
-            <MudTooltip Text="Добавить файл в БД" Placement="Placement.Top">
-                <MudFab @onclick="@(() => AddFileOverlayisVisible = true)" Style="background-color: #6a52f2;" StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" />
-            </MudTooltip>
-        </MudItem>
-        <MudItem xs="12">
-            @if (FileInstances is not null)
+<MudTabs Rounded="true" Centered="true" Color="Color.Warning" ActivePanelIndexChanged="@(() => Clear())">
+    <MudTabPanel Text="Просмотр архивов" Icon="@Icons.Material.Filled.TableView">
+        @if (_isDataLoading)
+        {
+            <MudProgressCircular Color="Color.Primary" />
+        }
+        else
+        {
+            if (WeatherArchives is not null)
             {
-                @if (FileInstances.Count > 0)
-                {
-                    <MudList Dense=true Style="height: 450px; overflow-y: scroll;">
-                        @foreach (var file in FileInstances)
-                        {
-                            <MudListItem>
-                                <MudGrid Spacing="1">
-                                    <MudItem xs="2">
-                                        <MudTooltip Text="Скачать файл" Placement="Placement.Top">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Download" Size="Size.Small" @onclick="@(() => FileService.DownloadFile(file))" />
-                                        </MudTooltip>
-                                    </MudItem>
-                                    <MudItem xs="6">
-                                        <MudText Typo="Typo.body2"><b>@file.FileName</b></MudText>
-                                    </MudItem>
-                                </MudGrid>
-                            </MudListItem>
-                        }
-                    </MudList>
-                }
-                else
-                {
-                    <MudText Typo="Typo.body2"><b>В БД отсутствуют файлы</b></MudText>
-                }
+                <MudTable Height="700px" FixedFooter=true Virtualize=true FixedHeader=true Items="WeatherArchives">
+                    <HeaderContent>
+                        <MudTh><MudTableSortLabel SortBy="new Func<WeatherArchive, object>(x=>x.Date)">Дата</MudTableSortLabel></MudTh>
+                        <MudTh>Время московское</MudTh>
+                        <MudTh>T</MudTh>
+                        <MudTh>Отн. влажность воздуха, %</MudTh>
+                        <MudTh>Td</MudTh>
+                        <MudTh>Направление ветра</MudTh>
+                        <MudTh>Скорость ветра</MudTh>
+                        <MudTh>Облачность, %</MudTh>
+                        <MudTh>h</MudTh>
+                        <MudTh>VV</MudTh>
+                        <MudTh>Погодные явления</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.Date</MudTd>
+                        <MudTd>@context.MoscowTime</MudTd>
+                        <MudTd>@context.T</MudTd>
+                        <MudTd>@context.AirHumidity</MudTd>
+                        <MudTd>@context.Td</MudTd>
+                        <MudTd>@context.AirDirection</MudTd>
+                        <MudTd>@context.AirSpeed</MudTd>
+                        <MudTd>@context.Cloudness</MudTd>
+                        <MudTd>@context.H</MudTd>
+                        <MudTd>@context.VV</MudTd>
+                        <MudTd>@context.Phenomena</MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager PageSizeOptions="new int[]{50, 100}" />
+                    </PagerContent>
+                </MudTable>
             }
             else
             {
-                <MudProgressCircular Indeterminate=true Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">БД пуста</MudText>
             }
-        </MudItem>
-    </MudGrid>
-</MudPaper>
-
-<MudOverlay Visible=AddFileOverlayisVisible DarkBackground=true>
-    <MudStack Row=true Justify="Justify.SpaceBetween">
-        <MudText Typo="Typo.h4" Style="color: white;"><b>Загрузка файла</b></MudText>
-        <MudPaper> </MudPaper>
-        <MudFab @onclick="@(() => AddFileOverlayisVisible = false)" Style="background-color: #ba0624;" StartIcon="@Icons.Material.Filled.Close" Size="Size.Small" />
-    </MudStack>
-    <MudPaper Style="padding: 15px; background-color: white; border-radius: 20px; margin-top: 20px;">
-        <MudFileUpload Accept=".docx,.doc" T="IReadOnlyList<IBrowserFile>" OnFilesChanged="OnInputFileChanged" AppendMultipleFiles Hidden="false" Class="flex-1" InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20" InputStyle="opacity:0"
+        }
+    </MudTabPanel>
+    <MudTabPanel Text="Загрузка архивов" Icon="@Icons.Material.Filled.Upload">
+        <MudFileUpload Accept=".xlsx,.xls" T="IReadOnlyList<IBrowserFile>" OnFilesChanged="OnInputFileChanged" AppendMultipleFiles Hidden="false" Class="flex-1" InputClass="absolute mud-width-full mud-height-full overflow-hidden z-20" InputStyle="opacity:0"
          @ondragenter="@SetDragClass" @ondragleave="@ClearDragClass" @ondragend="@ClearDragClass">
              <ButtonTemplate>
                  <MudPaper Height="300px" Outlined="true" Class="@DragClass">
@@ -81,8 +77,8 @@
                 <MudProgressCircular Color="Color.Primary" />
             }
         </MudToolBar>
-    </MudPaper>
-</MudOverlay>
+    </MudTabPanel>
+</MudTabs>
 
 @code {
     [Inject]
@@ -90,23 +86,30 @@
     [Inject]
     ISnackbar Snackbar { get; set; } = null!;
     [Inject]
-    FileService FileService { get; set; } = null!;
+    WeatherArchiveService WeatherArchiveService { get; set; } = null!;
 
     private List<string> fileNames = new(); // Список имен файлов, отображаемых в кружке после загрузки в форму загрузки
     private static string DefaultDragClass = "relative rounded-lg border-2 border-dashed pa-4 mt-4 mud-width-full mud-height-full z-10";
     private string DragClass = DefaultDragClass;
 
-    List<FileInstance>? FileInstances { get; set; }
-    List<FileInstance> _filesToUpload = new();
-    bool AddFileOverlayisVisible { get; set; } = false; // Отвечает за видимость оверлея с загрузкой файла
+    List<WeatherArchiveFile> _filesToUpload { get; set; } = new();
+    List<WeatherArchiveFile>? WeatherArchiveFiles { get; set; }
+    List<ArchiveSheet>? ArchiveSheets { get; set; }
+    List<WeatherArchive>? WeatherArchives { get; set; }
+
     const int MaxAllowedFiles = 10;
     bool _isUploading = false;
+    bool _isDataLoading = false;
 
     protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            FileInstances = DbContext.Files.ToList();
+            _isDataLoading = true;
+            WeatherArchiveFiles = DbContext.WeatherArchiveFiles.ToList();
+            ArchiveSheets = DbContext.ArchiveSheets.ToList();
+            WeatherArchives = DbContext.WeatherArchives.ToList();
+            _isDataLoading = false;
             StateHasChanged();
         }
 
@@ -128,7 +131,10 @@
         foreach (var file in files)
         {
             fileNames.Add(file.Name);
-            _filesToUpload.Add(await FileService.GetFileInstanceFromBrowserFile(file, file.Name));
+            var fileToUpload = await WeatherArchiveService.ParseAndGetWeatherArchiveFile(file, file.Name);
+
+            if (fileToUpload is not null)
+                _filesToUpload.Add(fileToUpload);
         }
     }
 
@@ -150,8 +156,15 @@
 
         _isUploading = true;
 
-        await DbContext.Files.AddRangeAsync(_filesToUpload);
-        await DbContext.SaveChangesAsync();
+        try
+        {
+            await DbContext.WeatherArchiveFiles.AddRangeAsync(_filesToUpload);
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Что-то пошло не так", Severity.Error);
+        }
 
         _isUploading = false;
 
@@ -159,12 +172,11 @@
 
         Snackbar.Add("Файлы успешно загружены", Severity.Success);
         await Clear();
-        AddFileOverlayisVisible = false;
     }
 
     async Task UpdateData()
     {
-        FileInstances = DbContext.Files.ToList();
+        WeatherArchiveFiles = DbContext.WeatherArchiveFiles.ToList();
         StateHasChanged();
     }
 

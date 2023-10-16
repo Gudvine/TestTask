@@ -17,6 +17,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddBlazorDownloadFile();
 builder.Services.AddScoped<FileService>();
+builder.Services.AddScoped<WeatherArchiveService>();
 
 var app = builder.Build();
 
